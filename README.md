@@ -1,3 +1,5 @@
+Multithread implementation of the Player conversation task
+
 Given a Player class - an instance of which can communicate with other Players.
 
 The requirements are as follows:
