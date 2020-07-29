@@ -6,5 +6,5 @@ package com.game.constants;
 public class GameConstants {
     public static final int MAX_MESSAGE_LIMIT = 10;
     public static final int MAX_MESSAGES_IN_QUEUE = 1;
-    public static final String INIT_MESSAGE = "Hi This is Initiator, send the message along with the message count";
+    public static final String START_MESSAGE = "Hi This is Initiator, send the message along with the message count";
 }

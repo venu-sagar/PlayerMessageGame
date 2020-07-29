@@ -1,6 +1,6 @@
-Having a Player class - an instance of this class with that can communicate with other Player(s) (other instances of this class)
+Given a Player class - an instance of which can communicate with other Players.
 
-The use case is as bellow:
+The requirements are as follows:
 
 1. create 2 players
 

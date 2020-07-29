@@ -1,5 +1,6 @@
 package com.game;
 
+import com.game.api.Message;
 import com.game.api.Player;
 import com.game.api.PlayerType;
 import com.game.constants.GameConstants;
@@ -17,14 +18,14 @@ public class PlayerImpl extends Player {
     public PlayerImpl(PlayerType playerType, //
                       BlockingQueue<String> sent, //
                       BlockingQueue<String> received, //
-                      int counter) {
-        super(playerType, sent, received, counter);
+                      int messageCount) {
+        super(playerType, sent, received, messageCount);
     }
 
     @Override
     public void run() {
         if (PlayerType.INITIATOR == this.playerType) {
-            sendInitMessage();
+            conversationStarter();
         }
         while (true) {
             String receivedMessage = receiveMessage();
@@ -33,56 +34,56 @@ public class PlayerImpl extends Player {
     }
 
     /**
-     * overrides the {@link Player} abstract class which implements the {@link com.game.api.Message}.
+     * overrides the {@link Player} abstract class which implements the {@link Message}.
      * Used by both Initiator and Receiver
      * @param message string sent to each other.
      */
     @Override
-    public void sendMessage(String message) {
+    public synchronized void sendMessage(String message) {
         String reply;
-        if (playerType == PlayerType.RECEIVER) {
-            this.counter++;
-            reply = message.replaceAll("[0123456789]", "") + "  " + this.counter;
-            log.info(String.format("Player [%s] sent message [%s].%n", this, reply));
-
-            //terminate condition.
-            if (this.counter == GameConstants.MAX_MESSAGE_LIMIT) {
-                log.info("Reached the maximum number of Messages, Application terminating. Bye! :)");
-                System.exit(0);
-            }
-        } else {
-            reply = message.replaceAll("[0123456789]", "").trim();
-            log.info(String.format("Player [%s] sent message [%s].%n", this, reply));
-        }
 
         try {
+            if (playerType == PlayerType.RECEIVER) {
+                this.messageCount++;
+                reply = "Hi Initiator, This is receiver. Your Message is" + message.replaceAll("[0123456789]", "") + "  " + this.messageCount;
+                this.log.info(String.format("Player [%s] sent message [%s].%n", this, reply));
+
+                //terminate condition.
+                if (this.messageCount == GameConstants.MAX_MESSAGE_LIMIT) {
+                    this.log.warning("Reached the maximum number of Messages, Application terminating. Bye! :)");
+                    System.exit(0);
+                }
+            } else {
+                reply = "Hi Receiver, Thanks, for the message. What is the current counter? ";
+                this.log.info(String.format("[%s] sent message [%s].%n", this.getName(), reply));
+            }
             // adds message
-            sent.put(reply);
+            this.sent.put(reply);
             sleep(1000);
 
         } catch (InterruptedException interrupted) {
             String error = String.format(
                     "Player [%s] failed to receive message on iteration [%d].",
-                    this, this.counter);
+                    this, this.messageCount);
             throw new IllegalStateException(error, interrupted);
         }
     }
 
     /**
-     * overrides the {@link Player} abstract class which implements the {@link com.game.api.Message}.
+     * overrides the {@link Player} abstract class which implements the {@link Message}.
      * Used by both Initiator and Receiver
      * @return the message in the queue.
      */
     @Override
-    public String receiveMessage() {
+    public synchronized String receiveMessage() {
         String receivedMessage;
         try {
-            receivedMessage = received.take();
+            receivedMessage = this.received.take();
 
         } catch (Exception interrupted) {
             String error = String.format(
                     "Player [%s] failed to receive message on iteration [%d].",
-                    this.getName(), this.counter);
+                    this.getName(), this.messageCount);
             throw new IllegalStateException(error, interrupted);
         }
         return receivedMessage;
@@ -92,14 +93,14 @@ public class PlayerImpl extends Player {
      * Send the Initial message to the queue.
      * It is activated only by when the player is Initiator.
      */
-    private void sendInitMessage() {
+    private synchronized void conversationStarter() {
         try {
-            sent.put(GameConstants.INIT_MESSAGE);
-            log.info(String.format("Player [%s] sent message [%s].%n", this, GameConstants.INIT_MESSAGE));
+            this.sent.put(GameConstants.START_MESSAGE);
+            this.log.info(String.format("[%s] sent message [%s].%n", this.getName(), GameConstants.START_MESSAGE));
         } catch (InterruptedException interrupted) {
             String error = String.format(
                     "Player [%s] failed to sent message [%s].",
-                    this.getName(), GameConstants.INIT_MESSAGE);
+                    this.getName(), GameConstants.START_MESSAGE);
             throw new IllegalStateException(error, interrupted);
         }
     }
